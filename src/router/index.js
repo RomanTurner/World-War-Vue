@@ -5,8 +5,8 @@ import EventDetails from '../views/event/Details.vue'
 import EventRegister from '../views/event/Register.vue'
 import EventEdit from '../views/event/Edit.vue'
 import About from '../views/About.vue'
-import NotFound from '../views/NotFound.vue'
-import NetworkError from '../views/NetworkError.vue'
+import NotFound from '@/views/NotFound.vue'
+import NetworkError from '@/views/NetworkError.vue'
 
 const routes = [
   {
@@ -41,22 +41,13 @@ const routes = [
   {
     path: '/event/:afterEvent(.*)',
     redirect: to => {
-      return { path: `/events/${to.params.afterEvent}`}
+      return { path: '/events/' + to.params.afterEvent }
     }
-    // Another possible method for redirecting with children. Needs path to be '/event/:id'
-    // children: [
-    //   { path: 'register', redirect: () => ({ name: 'EventRegister' }) },
-    //   { path: 'Edit', redirect: () => ({ name: 'EventEdit' }) }
-    // ]
-  },
-  {
-    path: '/about-us',
-    name: 'About',
-    component: About
   },
   {
     path: '/about',
-    redirect: { name: 'About' }
+    name: 'About',
+    component: About
   },
   {
     path: '/:catchAll(.*)',

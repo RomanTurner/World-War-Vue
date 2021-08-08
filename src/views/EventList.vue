@@ -2,32 +2,29 @@
   <h1>Events for Good</h1>
   <div class="events">
     <EventCard v-for="event in events" :key="event.id" :event="event" />
+
     <div class="pagination">
       <router-link
-        id="page-prev"
         :to="{ name: 'EventList', query: { page: page - 1 } }"
         rel="prev"
-        v-if="page !== 1"
-        >&#60;Previous
-      </router-link>
-      <div id="page-on">
-        <router-link
-          v-for="p in totalPages"
-          :key="p.id"
-          :class="isActive(p)"
-          :to="{ name: 'EventList', query: { page: p } }"
-          rel="on"
-        >
-          {{ p }}
-        </router-link>
-      </div>
+        v-show="page != 1"
+        >&#60; Previous</router-link
+      >
       <router-link
-        id="page-next"
+        id="page-nums"
+        v-for="p in Math.ceil(totalEvents / 2)"
+        :key="p"
+        exact-active-class="active"
+        :to="{ name: 'EventList', query: { page: p } }"
+        rel="prev"
+        >{{ p }}</router-link
+      >
+      <router-link
         :to="{ name: 'EventList', query: { page: page + 1 } }"
         rel="next"
-        v-if="hasNextPage"
-        >Next&#62;
-      </router-link>
+        v-show="hasNextPage"
+        >Next &#62;</router-link
+      >
     </div>
   </div>
 </template>
@@ -35,8 +32,7 @@
 <script>
 import EventCard from '@/components/EventCard.vue'
 import EventService from '@/services/EventService.js'
-import { watchEffect } from 'vue'
-
+import NProgress from 'nprogress'
 export default {
   name: 'EventList',
   props: ['page'],
@@ -49,31 +45,46 @@ export default {
       totalEvents: 0
     }
   },
-  created() {
-    watchEffect(() => {
-      this.events = null
-      EventService.getEvents(2, this.page)
-        .then(response => {
-          this.events = response.data
-          this.totalEvents = response.headers['x-total-count']
+  beforeRouteEnter(routeTo, routeFrom, next) {
+    NProgress.start()
+    return EventService.getEvents(2, parseInt(routeTo.query.page) || 1)
+      .then(response => {
+        next(comp => {
+          comp.events = response.data
+          comp.totalEvents = response.headers['x-total-count']
         })
-        .catch(() => {
-          this.$router.push({ name: 'NetworkError' })
-        })
-    })
+      })
+      .catch(() => {
+        next({ name: 'NetworkError' })
+      })
+      .finally(() => {
+        NProgress.done()
+      })
+  },
+  beforeRouteUpdate(routeTo) {
+    NProgress.start()
+    EventService.getEvents(2, parseInt(routeTo.query.page) || 1)
+      .then(response => {
+        this.events = response.data
+        this.totalEvents = response.headers['x-total-count']
+      })
+      .catch(() => {
+        return { name: 'NetworkError' }
+      })
+      .finally(() => {
+        NProgress.done()
+      })
   },
   computed: {
-    totalPages() {
-      return Math.ceil(this.totalEvents / 2)
-    },
     hasNextPage() {
       const totalPages = Math.ceil(this.totalEvents / 2)
       return this.page < totalPages
-    }
-  },
-  methods: {
-    isActive(p) {
-      return p === this.page ? 'active-page' : null
+    },
+    methods: {
+      isActive(p) {
+        console.log(p, this.page)
+        return p === this.page ? 'active' : null
+      }
     }
   }
 }
@@ -84,30 +95,17 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 500px;
 }
 .pagination {
   display: flex;
-  width: 300px;
+  width: 290px;
   justify-content: space-evenly;
 }
 .pagination a {
-  flex: 1;
   text-decoration: none;
   color: #2c3e50;
 }
-#page-prev {
-  text-align: left;
-}
-#page-next {
-  text-align: right;
-}
-#page-on {
-  flex: 1;
-  display: flex;
-  justify-content: space-evenly;
-}
-#page-on .active-page {
+#page-nums.active {
   color: #42b983;
 }
 </style>
